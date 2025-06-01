@@ -1,0 +1,10 @@
+{
+  "predicate": "any",
+  "conditions": [
+    { "field": "sender", "operator": "contains", "value": "quora.com" }
+  ],
+  "actions": [
+    { "type": "mark_read" },
+    { "type": "move", "label": "IMPORTANT" }
+  ]
+}
