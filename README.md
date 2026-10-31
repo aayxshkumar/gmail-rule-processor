@@ -1,5 +1,7 @@
 # Gmail Rule Processor
 
+> Built as a take-home assignment for HappyFox in June 2025.
+
 Standalone Python scripts to integrate with the Gmail API, store Inbox emails in Postgres, and process them via JSON‐defined rules (mark read/unread, move).
 
 ## Prerequisites
