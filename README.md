@@ -14,7 +14,7 @@ Standalone Python scripts to integrate with the Gmail API, store Inbox emails in
 
 1. Clone the repo:
    ```bash
-   git clone https://github.com/Aayushkumr/happyfox_assignment
+   git clone https://github.com/aayxshkumar/gmail-rule-processor
    cd happyfox_assignment
    ```
 
