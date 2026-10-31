@@ -1,94 +1,82 @@
 # Gmail Rule Processor
 
+![CI](https://github.com/aayxshkumar/gmail-rule-processor/actions/workflows/ci.yml/badge.svg)
+
 > Built as a take-home assignment for HappyFox in June 2025.
 
-Standalone Python scripts to integrate with the Gmail API, store Inbox emails in Postgres, and process them via JSON‐defined rules (mark read/unread, move).
+Standalone Python scripts that read Inbox mail through the Gmail API, store it in PostgreSQL, and apply rules defined in a JSON file (mark read, mark unread, move to a label).
 
-## Prerequisites
+- `fetch_emails.py` fetches up to 50 of the latest Inbox messages, parses each one and stores sender, recipients, subject, snippet, body (the first `text/plain` part of multipart mail), received date, read state and label IDs in an `emails` table. The table is created if it does not exist, and messages already stored are skipped.
+- `process_emails.py` loads `rules.json`, checks every stored email against the rule's conditions and, on a match, calls the Gmail API to apply the rule's actions. It prints each check and each change.
+- `rules.py` validates the rules file and evaluates single conditions.
+- `auth.py` runs the Google OAuth flow (scope `gmail.modify`) and caches the token in `token.json`.
+- `db.py` defines the SQLAlchemy model and reads `DATABASE_URL` from the environment or a `.env` file.
 
-- Python 3.8+ (tested on 3.11) with `pip` and `virtualenv`
+## Requirements
+
+- Python 3.12 (the version CI runs)
 - PostgreSQL
-- Google Cloud project with Gmail API enabled
+- A Google Cloud project with the Gmail API enabled and an OAuth client ID of type Desktop
 
 ## Setup
 
-1. Clone the repo:
-   ```bash
-   git clone https://github.com/aayxshkumar/gmail-rule-processor
-   cd happyfox_assignment
-   ```
+```bash
+git clone https://github.com/aayxshkumar/gmail-rule-processor.git
+cd gmail-rule-processor
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
 
-2. Create a `.env` in project root:
-   ```properties
-   DATABASE_URL=postgresql://<user>:<password>@localhost:5432/<db_name>
-   ```
+Create a database and point `DATABASE_URL` at it. Copy `.env.example` to `.env` and fill it in:
 
-3. Start Postgres and create DB & user:
-   ```bash
-   brew services start postgresql
-   psql postgres -c "CREATE USER happyfox_user WITH PASSWORD 'passpass';"
-   psql postgres -c "CREATE DATABASE happyfox_db OWNER happyfox_user;"
-   ```
+```properties
+DATABASE_URL=postgresql://<user>:<password>@localhost:5432/<db_name>
+```
 
-4. Python environment:
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   pip install --upgrade pip
-   pip install -r requirements.txt
-   ```
+The `postgresql://` scheme uses the psycopg 3 driver installed from `requirements.txt`.
 
-## OAuth Credentials
-
-1. In Google Cloud Console:
-   - Enable Gmail API
-   - Create OAuth Client ID (Desktop)
-   - Download JSON as `credentials.json` in project root
-2. Generate `token.json` by running:
-   ```bash
-   python auth.py
-   ```
+Download the OAuth client JSON from Google Cloud Console and save it as `credentials.json` in the project root. The first script run opens a browser for consent and writes `token.json` next to it. Both files are ignored by git.
 
 ## Usage
 
-- Fetch and store emails in Postgres:
-  ```bash
-  python fetch_emails.py
-  ```
+Run the scripts from the project root, since `rules.json` is read from the current directory.
 
-- Define your rules in `rules.json`. Example:
-  ```json
-  {
-    "predicate": "any",
-    "conditions": [
-      { "field": "sender", "operator": "contains", "value": "newsletter@" }
-    ],
-    "actions": [
-      { "type": "mark_read" },
-      { "type": "move", "label": "NEWSLETTER" }
-    ]
-  }
-  ```
+```bash
+python fetch_emails.py     # store Inbox messages in Postgres
+python process_emails.py   # apply rules.json to the stored messages
+```
 
-- Process stored emails with your rules:
-  ```bash
-  python process_emails.py
-  ```
-  Console will print each applied modification.
+SQL logging is on (`echo=True` in `db.py`), so the scripts print the queries they run.
 
-## Database Maintenance
+## Rules
 
-- To drop and recreate the `emails` table:
-  ```bash
-  psql "$DATABASE_URL" -c "DROP TABLE IF EXISTS emails;"
-  python fetch_emails.py
-  ```
+`rules.json` holds one rule:
 
-## Configuration
+```json
+{
+  "predicate": "any",
+  "conditions": [
+    { "field": "sender", "operator": "contains", "value": "quora.com" }
+  ],
+  "actions": [
+    { "type": "mark_read" },
+    { "type": "move", "label": "IMPORTANT" }
+  ]
+}
+```
 
-- `.env`: set `DATABASE_URL`
-- `rules.json`: define your rule sets
-- `credentials.json` + `token.json`: OAuth flow files
+- `predicate`: `all` or `any` of the conditions must match.
+- Text conditions: `field` is `sender`, `subject` or `body`; `operator` is `contains` or `equals`. Both compare case-insensitively.
+- Date conditions: set both `field` and `operator` to `before` or `after`, and `value` to a number of days. `before` matches mail received less than that many days ago; `after` matches mail received more than that many days ago.
+- Actions: `mark_read`, `mark_unread`, and `move` with a `label` name. `move` adds the label and removes `INBOX`; unknown label names are skipped with a warning.
 
----
+## Development
 
+```bash
+pip install -r requirements-dev.txt
+ruff check .
+pytest
+```
+
+The tests cover rule loading and condition matching only. They need no network, Gmail account or database.
