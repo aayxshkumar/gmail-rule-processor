@@ -1,27 +1,8 @@
-from datetime import datetime, timedelta
-
 from googleapiclient.discovery import build
 
 from auth import get_gmail_credentials
 from db import Email, SessionLocal
-from rules import load_rules
-
-
-def evaluate(e: Email, cond: dict) -> bool:
-    field, op, val = cond['field'], cond['operator'], cond['value']
-    if field == 'sender': target = e.sender or ''
-    elif field == 'subject': target = e.subject or ''
-    elif field == 'body': target = e.body or ''
-    elif field in ('before','after'):
-        delta = datetime.now() - e.date_received
-        days  = int(val)
-        return (delta < timedelta(days=days)) if op=='before' else (delta > timedelta(days=days))
-    else:
-        return False
-
-    if op == 'contains':    return val.lower() in target.lower()
-    if op == 'equals':      return target.lower() == val.lower()
-    return False
+from rules import evaluate, load_rules
 
 
 def apply_actions(service, msg_id: str, actions: list):
