@@ -1,8 +1,9 @@
-import json
 from datetime import datetime, timedelta
+
 from googleapiclient.discovery import build
+
 from auth import get_gmail_credentials
-from db import SessionLocal, Email
+from db import Email, SessionLocal
 from rules import load_rules
 
 
@@ -24,8 +25,6 @@ def evaluate(e: Email, cond: dict) -> bool:
 
 
 def apply_actions(service, msg_id: str, actions: list):
-    # fetch label map once
-    global LABEL_MAP
     mods = {'addLabelIds':[], 'removeLabelIds':[]}
     for act in actions:
         t = act['type']

@@ -1,9 +1,10 @@
 import os
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Boolean
+
+from dotenv import load_dotenv
+from sqlalchemy import Boolean, Column, DateTime, Integer, String, Text, create_engine
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from dotenv import load_dotenv
 
 load_dotenv()
 DATABASE_URL = os.getenv('DATABASE_URL')

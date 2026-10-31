@@ -1,9 +1,11 @@
 import base64
-from googleapiclient.discovery import build
-from auth import get_gmail_credentials
-from db import SessionLocal, init_db, Email
-from email import message_from_bytes
 from datetime import datetime
+from email import message_from_bytes
+
+from googleapiclient.discovery import build
+
+from auth import get_gmail_credentials
+from db import Email, SessionLocal, init_db
 
 
 def fetch_and_store(max_results=50):
