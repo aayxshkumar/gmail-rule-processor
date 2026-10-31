@@ -43,7 +43,8 @@ htmlcov/
 .coverage
 .coverage.*
 .cache
-pytest_cache/
+.pytest_cache/
+.ruff_cache/
 cover/
 
 # Jupyter Notebook
@@ -51,6 +52,7 @@ cover/
 
 # Environments
 .env
+!.env.example
 credentials.json
 token.json
 
